@@ -25,6 +25,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@prisma/client": "^6.19.3",
     "@radix-ui/react-checkbox": "^1.4.0",
     "@radix-ui/react-dialog": "^1.3.0",
@@ -47,6 +48,7 @@
     "sonner": "^2.0.8",
     "stripe": "^23.0.0",
     "tailwind-merge": "^3.7.0",
+    "undici": "^7.30.0",
     "zod": "^4.6.6"
   },
   "devDependencies": {
