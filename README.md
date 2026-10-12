@@ -16,8 +16,8 @@ Voraussetzung: **Node.js ≥ 20.9** (getestet mit Node 22).
 git clone <repo> && cd <repo>
 cp .env.example .env          # Defaults funktionieren lokal sofort
 npm install                   # erzeugt auch den Prisma-Client
-npx prisma migrate dev        # legt prisma/dev.db (SQLite) an
-npm run seed                  # Admin, Demo-Kunde, Projekte, Scans, Leads
+npx prisma migrate dev        # legt prisma/dev.db (SQLite) an und führt den Seed aus
+npm run seed                  # idempotent; nötig, falls die DB schon existierte
 npm run dev                   # http://localhost:3000
 npm run worker                # zweites Terminal: verarbeitet Scans
 ```
