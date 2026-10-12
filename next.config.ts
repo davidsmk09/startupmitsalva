@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
+// HSTS und upgrade-insecure-requests nur, wenn die App per HTTPS ausgeliefert wird
+const isHttps = (process.env.APP_URL ?? process.env.NEXTAUTH_URL ?? "").startsWith("https://");
 
 /**
  * Content-Security-Policy: so streng wie mit Next.js praktikabel.
@@ -19,7 +21,7 @@ const csp = [
   "base-uri 'self'",
   "form-action 'self' https://checkout.stripe.com https://billing.stripe.com https://accounts.google.com",
   "object-src 'none'",
-  ...(isDev ? [] : ["upgrade-insecure-requests"]),
+  ...(isHttps ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
 
 const securityHeaders = [
@@ -28,7 +30,7 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
-  ...(isDev ? [] : [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }]),
+  ...(isHttps ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" }] : []),
 ];
 
 const nextConfig: NextConfig = {

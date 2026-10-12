@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Toaster } from "sonner";
 import { CookieBanner } from "@/components/layout/cookie-banner";
+import { themeInitScript } from "@/components/layout/theme-toggle";
 import { site } from "@/lib/site";
 import { t } from "@/lib/i18n";
 import "./globals.css";
@@ -36,6 +36,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="de" data-scroll-behavior="smooth" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="min-h-screen font-sans">
         <a
           href="#main"
@@ -45,7 +48,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         {children}
         <CookieBanner />
-        <Toaster richColors position="top-right" closeButton />
       </body>
     </html>
   );

@@ -35,7 +35,7 @@ export const de = {
     forbidden: "Dafür fehlen dir die Berechtigungen.",
     notFound: "Nicht gefunden.",
     demoBanner:
-      "Demo-Modus: Für mindestens einen KI-Anbieter ist kein API-Key hinterlegt. Die angezeigten KI-Antworten sind simulierte Demo-Daten.",
+      "Demo-Modus: Es ist kein KI-API-Key hinterlegt. Die angezeigten KI-Antworten sind simulierte Demo-Daten.",
     demoBadge: "Demo-Daten",
     honestyNote:
       "KI-Antworten schwanken von Abfrage zu Abfrage. Wir messen mehrfach, zeigen Trends und Schwankungsbreiten – garantierte Erwähnungen oder Rankings gibt es nicht.",

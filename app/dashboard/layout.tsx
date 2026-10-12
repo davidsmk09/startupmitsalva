@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Toaster } from "sonner";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { ProjectSwitcher } from "@/components/dashboard/project-switcher";
 import { LogoutButton } from "@/components/dashboard/user-menu";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { VerifyBanner } from "@/components/dashboard/verify-banner";
 import { DemoBanner } from "@/components/dashboard/demo-banner";
 import { Badge } from "@/components/ui/badge";
@@ -28,11 +30,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
               Plan: {ctx.plan.name}
             </Badge>
             <span className="hidden max-w-[180px] truncate text-sm text-muted-foreground md:inline">{ctx.user.email}</span>
+            <ThemeToggle />
             <LogoutButton />
           </div>
         </header>
         {!ctx.user.emailVerifiedAt && <VerifyBanner />}
         {isDemoMode() && <DemoBanner />}
+        <Toaster richColors position="top-right" closeButton />
         <main id="main" className="flex-1 p-4 md:p-8">
           {children}
         </main>

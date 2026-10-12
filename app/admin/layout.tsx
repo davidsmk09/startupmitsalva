@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Toaster } from "sonner";
 import Link from "next/link";
 import { requireAdminPage } from "@/lib/auth/session";
 import { Logo } from "@/components/layout/logo";
@@ -27,7 +28,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
         <AdminNav />
       </header>
-      <main id="main" className="p-4 md:p-8">
+      <Toaster richColors position="top-right" closeButton />
+        <main id="main" className="p-4 md:p-8">
         {children}
       </main>
     </div>

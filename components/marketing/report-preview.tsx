@@ -1,7 +1,7 @@
 import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { ScoreGauge } from "@/components/charts/score-gauge";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 /** Beispiel-Report mit FIKTIVEN Daten (klar gekennzeichnet). */
 export function ReportPreview() {
@@ -23,11 +23,7 @@ export function ReportPreview() {
             <ScoreGauge score={56} margin={6} label="Gesamtscore" size={180} />
           </div>
           <div className="space-y-3 md:col-span-2">
-            <CardHeader className="p-0">
-              <CardTitle as="h3" className="text-base">
-                Sichtbarkeit je KI-Anbieter
-              </CardTitle>
-            </CardHeader>
+            <p className="font-semibold">Sichtbarkeit je KI-Anbieter</p>
             {providers.map((p) => (
               <div key={p.name}>
                 <div className="flex justify-between text-sm">
