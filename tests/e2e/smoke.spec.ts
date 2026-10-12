@@ -79,3 +79,47 @@ test("Gratis-Check ohne Login → Teaser-Ergebnis", async ({ page }) => {
   await expect(page.getByTestId("teaser-score")).toBeVisible({ timeout: 90_000 });
   await expect(page.getByRole("link", { name: /vollständigen Report/ })).toBeVisible();
 });
+
+test("Angebotsanfrage → Lead im Admin → Serviceprojekt → Kundenansicht", async ({ browser, baseURL }) => {
+  const consent = [{ name: "cookie_consent", value: "necessary", url: baseURL! }];
+  // 1) Kunde registriert sich
+  const customerCtx = await browser.newContext();
+  await customerCtx.addCookies(consent);
+  const customer = await customerCtx.newPage();
+  const email = await register(customer);
+
+  // 2) Angebotsanfrage (ohne Login, eigener Kontext)
+  const visitorCtx = await browser.newContext();
+  await visitorCtx.addCookies(consent);
+  const visitor = await visitorCtx.newPage();
+  await visitor.goto("/angebot?paket=2");
+  await visitor.locator("#name").fill("E2E Kundin");
+  await visitor.locator("#email").fill(email);
+  await visitor.locator("#firma").fill("E2E Firma");
+  await visitor.locator("#nachricht").fill("Bitte Angebot für Paket 2.");
+  await visitor.locator("#consent").click();
+  await visitor.getByRole("button", { name: "Unverbindlich anfragen" }).click();
+  await expect(visitor.getByText("Vielen Dank! Deine Anfrage ist eingegangen.")).toBeVisible();
+
+  // 3) Admin wandelt Lead in Serviceprojekt um und legt Task an
+  const adminCtx = await browser.newContext();
+  await adminCtx.addCookies(consent);
+  const admin = await adminCtx.newPage();
+  await admin.goto("/login");
+  await admin.locator("#email").fill("e2e-admin@example.com");
+  await admin.locator("#password").fill("e2e-admin-passwort-123");
+  await admin.getByRole("button", { name: "Anmelden" }).click();
+  await admin.waitForURL(/\/dashboard/);
+  await admin.goto("/admin/leads");
+  await admin.getByRole("link", { name: "E2E Firma" }).first().click();
+  await admin.getByRole("button", { name: "In Serviceprojekt umwandeln" }).click();
+  await admin.waitForURL(/\/admin\/service-projects\//);
+  await admin.getByLabel("Neuer Task: Titel").fill("E2E Sichtbarer Task");
+  await admin.getByRole("button", { name: "Anlegen" }).click();
+  await expect(admin.getByText("E2E Sichtbarer Task")).toBeVisible();
+
+  // 4) Kunde sieht Projektstatus inkl. Task
+  await customer.goto("/dashboard/service");
+  await expect(customer.getByText("E2E Sichtbarer Task")).toBeVisible();
+  await expect(customer.getByText(/Aufgaben erledigt/)).toBeVisible();
+});
