@@ -28,7 +28,17 @@ async function main() {
   process.on("SIGINT", () => void stop("SIGINT"));
   process.on("SIGTERM", () => void stop("SIGTERM"));
 
-  logger.info("worker.started", { pollMs: POLL_MS, concurrency: CONCURRENCY });
+  // Optionaler Health-Check-Port (für Hosting/Orchestrierung und E2E-Tests)
+  const healthPort = Number(process.env.WORKER_HEALTH_PORT ?? 0);
+  if (healthPort > 0) {
+    const { createServer } = await import("node:http");
+    createServer((_req, res) => {
+      res.writeHead(stopping ? 503 : 200, { "Content-Type": "text/plain" });
+      res.end(stopping ? "stopping" : `ok active=${active}`);
+    }).listen(healthPort);
+  }
+
+  logger.info("worker.started", { pollMs: POLL_MS, concurrency: CONCURRENCY, healthPort: healthPort || undefined });
   let lastStaleCheck = 0;
 
   while (!stopping) {

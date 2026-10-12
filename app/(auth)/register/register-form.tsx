@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,9 @@ import { t } from "@/lib/i18n";
 
 export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
   const router = useRouter();
+  const params = useSearchParams();
+  const nextParam = params.get("next");
+  const next = nextParam && nextParam.startsWith("/dashboard") ? nextParam : "/dashboard?welcome=1";
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -50,7 +53,7 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
     const login = await signIn("credentials", { email: body.email, password: body.password, redirect: false });
     setLoading(false);
     if (login?.ok) {
-      router.push("/dashboard?welcome=1");
+      router.push(next);
       router.refresh();
     } else {
       router.push("/login?registered=1");

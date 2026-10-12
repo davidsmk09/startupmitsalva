@@ -54,3 +54,8 @@ export function normalizeDomain(input: string): string {
 export function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
+
+/** Zeitpunkt vor n Tagen. */
+export function daysAgo(n: number, from = new Date()): Date {
+  return new Date(from.getTime() - n * 24 * 3600_000);
+}
