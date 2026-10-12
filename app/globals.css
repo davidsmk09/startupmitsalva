@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design-Tokens (HSL ohne hsl()).
+ * AKZENTFARBE: --primary (und --ring). Hier zentral ändern.
+ */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 221 83% 43%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 95%;
+    --secondary-foreground: 222 47% 15%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 38%;
+    --accent: 221 70% 96%;
+    --accent-foreground: 221 83% 30%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 69% 28%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 30 90% 26%;
+    --border: 220 13% 89%;
+    --input: 220 13% 82%;
+    --ring: 221 83% 43%;
+    --radius: 0.6rem;
+  }
+
+  .dark {
+    --background: 222 40% 7%;
+    --foreground: 210 40% 96%;
+    --card: 222 35% 10%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 35% 10%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 217 91% 65%;
+    --primary-foreground: 222 47% 8%;
+    --secondary: 217 25% 17%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 25% 15%;
+    --muted-foreground: 215 20% 70%;
+    --accent: 217 30% 18%;
+    --accent-foreground: 210 40% 96%;
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 60% 50%;
+    --success-foreground: 222 47% 8%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 38 92% 70%;
+    --border: 217 25% 20%;
+    --input: 217 25% 26%;
+    --ring: 217 91% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+mark.brand-hit {
+  @apply rounded bg-success/20 px-0.5 text-foreground;
+}
+mark.competitor-hit {
+  @apply rounded bg-warning/25 px-0.5 text-foreground;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

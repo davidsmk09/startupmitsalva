@@ -147,3 +147,18 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# --- Projekt ---
+.env
+.env.local
+.env*.local
+.next/
+out/
+next-env.d.ts
+*.db
+*.db-journal
+/storage/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

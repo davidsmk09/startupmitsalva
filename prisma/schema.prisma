@@ -1,0 +1,349 @@
+// Datenmodell der KI-Sichtbarkeits-Plattform.
+//
+// Entwicklung: SQLite. Produktion: PostgreSQL.
+// Für Postgres: `npm run db:use-postgres` (setzt provider = "postgresql")
+// und DATABASE_URL anpassen. Siehe README.
+//
+// Hinweis zur Portabilität: "Enums" sind als String-Felder modelliert
+// (zulässige Werte stehen im Kommentar und in lib/constants.ts) und Listen
+// (z. B. Aliase, Wettbewerber) als JSON-String. So läuft dasselbe Schema
+// unverändert auf SQLite und PostgreSQL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String?
+  name            String?
+  role            String    @default("USER") // USER | ADMIN
+  emailVerifiedAt DateTime?
+  notifyWeekly    Boolean   @default(true)
+  notifyAlerts    Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  memberships Membership[]
+  tokens      UserToken[]
+}
+
+model UserToken {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String // VERIFY_EMAIL | RESET_PASSWORD
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Organization {
+  id                 String   @id @default(cuid())
+  name               String
+  stripeCustomerId   String?  @unique
+  whiteLabelLogoUrl  String?
+  whiteLabelName     String?
+  monthlyBudgetCents Int?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  memberships    Membership[]
+  subscription   Subscription?
+  projects       Project[]
+  usage          UsageCounter[]
+  serviceProject ServiceProject[]
+}
+
+model Membership {
+  id        String   @id @default(cuid())
+  userId    String
+  orgId     String
+  role      String   @default("OWNER") // OWNER | MEMBER
+  createdAt DateTime @default(now())
+
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, orgId])
+  @@index([orgId])
+}
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  orgId                String    @unique
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  planKey              String // starter | business | agentur
+  interval             String    @default("month") // month | year
+  status               String // active | trialing | past_due | canceled | incomplete | unpaid
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id           String   @id @default(cuid())
+  orgId        String
+  name         String
+  brandName    String
+  brandAliases String   @default("[]") // JSON: string[]
+  domain       String
+  industry     String
+  city         String
+  region       String?
+  language     String   @default("de")
+  competitors  String   @default("[]") // JSON: {name:string; domain?:string}[] (max 5)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  prompts Prompt[]
+  scans   Scan[]
+
+  @@index([orgId])
+}
+
+model Prompt {
+  id        String   @id @default(cuid())
+  projectId String
+  // Dauerhaft stabile ID (z. B. "kat-01"), damit Verläufe über Scans vergleichbar bleiben.
+  stableId  String
+  text      String
+  category  String // KATEGORIE | EMPFEHLUNG | VERGLEICH | LOKAL | MARKE
+  active    Boolean  @default(true)
+  isTop     Boolean  @default(false) // Top-Prompt (tägliche Scans im Agentur-Plan)
+  source    String   @default("GENERATED") // GENERATED | USER
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  runs    ScanRun[]
+
+  @@unique([projectId, stableId])
+}
+
+model Scan {
+  id                 String    @id @default(cuid())
+  projectId          String?
+  status             String    @default("QUEUED") // QUEUED | RUNNING | COMPLETED | FAILED
+  type               String    @default("FULL") // FULL | QUICK | WEEKLY | DAILY
+  // Für Gratis-Check (ohne Projekt): Eingaben als JSON
+  quickInputJson     String?
+  publicToken        String?   @unique
+  leadId             String?
+  providersJson      String    @default("[]")
+  totalRuns          Int       @default(0)
+  doneRuns           Int       @default(0)
+  phase              String    @default("WARTESCHLANGE")
+  startedAt          DateTime?
+  finishedAt         DateTime?
+  visibilityScore    Float?
+  visibilityMargin   Float?
+  technicalScore     Float?
+  overallScore       Float?
+  metricsJson        String? // detaillierte Kennzahlen (Raten, SoV, je Provider)
+  costEstimateCents  Int       @default(0)
+  partial            Boolean   @default(false)
+  isDemo             Boolean   @default(false)
+  error              String?
+  createdAt          DateTime  @default(now())
+
+  project      Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  runs         ScanRun[]
+  auditResults AuditResult[]
+  reports      Report[]
+
+  @@index([projectId, createdAt])
+  @@index([status])
+}
+
+model ScanRun {
+  id                     String   @id @default(cuid())
+  scanId                 String
+  promptId               String?
+  promptStableId         String
+  promptText             String
+  promptCategory         String
+  provider               String
+  runIndex               Int
+  answerText             String   @default("")
+  citationsJson          String   @default("[]")
+  brandMentioned         Boolean  @default(false)
+  brandCited             Boolean  @default(false)
+  mentionPosition        Int?
+  competitorMentionsJson String   @default("[]")
+  sentiment              String? // positiv | neutral | negativ (experimentell)
+  rawJson                String?
+  tokens                 Int?
+  costCents              Float    @default(0)
+  latencyMs              Int?
+  error                  String?
+  createdAt              DateTime @default(now())
+
+  scan   Scan    @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  prompt Prompt? @relation(fields: [promptId], references: [id], onDelete: SetNull)
+
+  @@index([scanId])
+}
+
+model AuditResult {
+  id             String @id @default(cuid())
+  scanId         String
+  checkKey       String
+  title          String
+  status         String // PASS | WARN | FAIL | INFO
+  weight         Int
+  details        String
+  recommendation String
+  dataJson       String?
+
+  scan Scan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@index([scanId])
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  scanId    String
+  pdfPath   String
+  createdAt DateTime @default(now())
+
+  scan Scan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+}
+
+model Lead {
+  id             String   @id @default(cuid())
+  name           String?
+  email          String
+  firma          String?
+  website        String?
+  branche        String?
+  paketInteresse String? // 1 | 2 | 3
+  nachricht      String?
+  status         String   @default("NEU") // NEU | KONTAKTIERT | ANGEBOT | GEWONNEN | VERLOREN
+  source         String // GRATIS_CHECK | ANGEBOT | KONTAKT | SEED
+  consent        Boolean  @default(false)
+  consentAt      DateTime?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  serviceProjects ServiceProject[]
+
+  @@index([status])
+}
+
+model ServiceProject {
+  id        String   @id @default(cuid())
+  leadId    String?
+  orgId     String?
+  paket     Int // 2 | 3
+  title     String
+  status    String   @default("PLANUNG") // PLANUNG | IN_ARBEIT | ABGESCHLOSSEN | PAUSIERT
+  notizen   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lead  Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  org   Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  tasks ServiceTask[]
+}
+
+model ServiceTask {
+  id                String    @id @default(cuid())
+  serviceProjectId  String
+  titel             String
+  beschreibung      String?
+  kategorie         String // WEBSITE | VERZEICHNIS | ADS | SONSTIGES
+  status            String    @default("OFFEN") // OFFEN | IN_ARBEIT | ERLEDIGT
+  zugewiesenAn      String?
+  dueDate           DateTime?
+  sichtbarFuerKunde Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  serviceProject ServiceProject @relation(fields: [serviceProjectId], references: [id], onDelete: Cascade)
+
+  @@index([serviceProjectId])
+}
+
+model OutboxEmail {
+  id        String   @id @default(cuid())
+  to        String
+  subject   String
+  html      String
+  text      String
+  status    String // SENT | LOGGED | FAILED
+  provider  String // resend | outbox
+  error     String?
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  orgId      String?
+  action     String
+  targetType String?
+  targetId   String?
+  metaJson   String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model UsageCounter {
+  id         String @id @default(cuid())
+  orgId      String
+  month      String // YYYY-MM
+  scans      Int    @default(0)
+  promptRuns Int    @default(0)
+  costCents  Int    @default(0)
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, month])
+}
+
+model Job {
+  id          String    @id @default(cuid())
+  type        String // SCAN
+  payloadJson String
+  status      String    @default("PENDING") // PENDING | RUNNING | DONE | FAILED
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(2)
+  runAt       DateTime  @default(now())
+  lockedAt    DateTime?
+  lockedBy    String?
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, runAt])
+}
+
+model StripeEvent {
+  id          String   @id // Stripe-Event-ID (Idempotenz)
+  type        String
+  processedAt DateTime @default(now())
+}
+
+model RateLimitBucket {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+}
